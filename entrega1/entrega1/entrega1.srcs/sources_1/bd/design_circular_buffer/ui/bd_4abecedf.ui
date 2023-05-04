@@ -1,0 +1,28 @@
+{
+   "ActiveEmotionalView":"Default View",
+   "Default View_ScaleFactor":"0.740644",
+   "Default View_TopLeft":"-19,-275",
+   "ExpandedHierarchyInLayout":"",
+   "guistr":"# # String gsaved with Nlview 7.0r4  2019-12-20 bk=1.5203 VDI=41 GEI=36 GUI=JA:10.0 TLS
+#  -string -flagsOSRD
+preplace port DDR -pg 1 -lvl 5 -x 1400 -y -90 -defaultsOSRD
+preplace port FIXED_IO -pg 1 -lvl 5 -x 1400 -y -70 -defaultsOSRD
+preplace inst processing_system7_0 -pg 1 -lvl 2 -x 460 -y 0 -defaultsOSRD
+preplace inst ps7_0_axi_periph -pg 1 -lvl 4 -x 1230 -y -240 -defaultsOSRD
+preplace inst rst_ps7_0_100M -pg 1 -lvl 3 -x 880 -y -190 -defaultsOSRD
+preplace inst my_circular_buffer_0 -pg 1 -lvl 1 -x 140 -y -50 -defaultsOSRD
+preplace netloc processing_system7_0_FCLK_CLK0 1 0 4 30 30 240 150 660 -290 1060
+preplace netloc processing_system7_0_FCLK_RESET0_N 1 2 1 670 -210n
+preplace netloc rst_ps7_0_100M_peripheral_aresetn 1 0 4 20 -310 NJ -310 NJ -310 1050
+preplace netloc processing_system7_0_DDR 1 2 3 NJ -90 N -90 N
+preplace netloc processing_system7_0_FIXED_IO 1 2 3 NJ -70 N -70 N
+preplace netloc processing_system7_0_M_AXI_GP0 1 2 2 650J -300 N
+preplace netloc ps7_0_axi_periph_M00_AXI 1 0 5 10 -320 NJ -320 NJ -320 1070J -120 1370
+levelinfo -pg 1 -10 140 460 880 1230 1400
+pagesize -pg 1 -db -bbox -sgen -10 -360 1510 200
+"
+}
+{
+   "da_axi4_cnt":"1",
+   "da_ps7_cnt":"2"
+}
