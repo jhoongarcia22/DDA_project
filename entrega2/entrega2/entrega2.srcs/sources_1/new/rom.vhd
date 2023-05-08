@@ -30,9 +30,7 @@ begin
 
     process(clk)
     begin
-        if rising_edge(clk) then
         data <= ROM(conv_integer(addr));
-        end if;
     end process;
 
 end rtl; 

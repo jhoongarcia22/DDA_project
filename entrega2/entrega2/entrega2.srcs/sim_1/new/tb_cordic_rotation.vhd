@@ -76,8 +76,18 @@ begin
     Yi<=std_logic_vector(to_signed(integer(0*2**23),24));
     Zi<=std_logic_vector(to_signed(integer(-2097151),24));
     start<='1';
-    wait for clk_period;
+    wait for 2*clk_period;
     start<='0';
+    
+    wait for 50*clk_period;
+    Xi<=std_logic_vector(to_signed(integer(1*2**23-1),24));
+    Yi<=std_logic_vector(to_signed(integer(0*2**23),24));
+    Zi<=std_logic_vector(to_signed(integer(2097151),24));
+    start<='1';
+    wait for 2*clk_period;
+    start<='0';
+    
+    
     wait;
 end process;
 

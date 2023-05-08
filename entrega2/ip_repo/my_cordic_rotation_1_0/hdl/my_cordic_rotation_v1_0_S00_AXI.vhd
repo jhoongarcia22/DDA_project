@@ -373,10 +373,10 @@ begin
 	        reg_data_out(31 downto 25) <= (others => S_Xo(24));
 	        reg_data_out(24 downto 0) <= S_Xo;         --signal out of cordic_rotation
 	      when b"01" =>
-	        reg_data_out(31 downto 25) <= (others => S_Xo(24));
+	        reg_data_out(31 downto 25) <= (others => S_Yo(24));
 	        reg_data_out(24 downto 0) <= S_Yo;         --signal out of cordic_rotation
 	      when b"10" =>
-	        reg_data_out(31 downto 24) <= (others => S_Xo(23));
+	        reg_data_out(31 downto 24) <= (others => S_Zo(23));
 	        reg_data_out(23 downto 0) <= S_Zo;         --signal out of cordic_rotation
 	      when b"11" =>
 	        reg_data_out(31 downto 1) <= (others => S_done);
@@ -426,12 +426,16 @@ begin
            S_rst <='0';
     process(S_AXI_ACLK)
     begin
-        case axi_awaddr(ADDR_LSB + OPT_MEM_ADDR_BITS downto ADDR_LSB) is
-            when b"11" =>
-                S_start <='1';    
-            when others =>
-	           S_start<='0';
-       end case;
+    	if (slv_reg_wren = '1') then
+            case axi_awaddr(ADDR_LSB + OPT_MEM_ADDR_BITS downto ADDR_LSB) is
+                when b"11" =>
+                    S_start <='1';    
+                when others =>
+                   S_start<='0';
+           end case;
+           else
+                S_start<='0';
+        end if;
     end process;
 	-- User logic ends
 
