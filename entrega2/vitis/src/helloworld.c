@@ -51,26 +51,62 @@
 #include "xparameters.h"
 
 #define CORDIC_BASE XPAR_MY_CORDIC_ROTATION_0_S00_AXI_BASEADDR
-#define X *((volatile u32*)CBUFFER_BASE)
-#define Y *((volatile u32*)(CBUFFER_BASE+4))
-#define Z *((volatile u32*)(CBUFFER_BASE+8))
-#define start_done *((volatile u32*)(CBUFFER_BASE+12))
+#define X *((volatile s32*)CORDIC_BASE)
+#define Y *((volatile s32*)(CORDIC_BASE+4))
+#define Z *((volatile s32*)(CORDIC_BASE+8))
+#define start_done *((volatile u32*)(CORDIC_BASE+12))
 
 
 int main()
 {
     init_platform();
-
+    /*Pi 4tos -*/
     X = (1  << 23) - 1;
     Y =  0;
     Z =  -2097151;
     start_done = 1;
 
-    while (start_done == 0){
-        printf("%ld, ", (long )X);
-        printf("%ld, ", (long )Y);
-        printf("%ld \n", (long )Z);
-    }
+    while (start_done == 0){}
+
+    printf("%ld, ", (long )X);
+    printf("%ld, ", (long )Y);
+    printf("%ld \n", (long )Z);
+
+    /*Pi 4tos*/
+    X = (1  << 23) - 1;
+    Y =  0;
+    Z =  2097151;
+    start_done = 1;
+
+    while (start_done == 0){}
+
+    printf("%ld, ", (long )X);
+    printf("%ld, ", (long )Y);
+    printf("%ld \n", (long )Z);
+
+    /*Pi 8vos -*/
+	X = (1  << 23) - 1;
+	Y =  0;
+	Z =  -2097151/2;
+	start_done = 1;
+
+	while (start_done == 0){}
+
+	printf("%ld, ", (long )X);
+	printf("%ld, ", (long )Y);
+	printf("%ld \n", (long )Z);
+
+    /*Pi 8vos*/
+	X = (1  << 23) - 1;
+	Y =  0;
+	Z =  2097151/2;
+	start_done = 1;
+
+	while (start_done == 0){}
+
+	printf("%ld, ", (long )X);
+	printf("%ld, ", (long )Y);
+	printf("%ld \n", (long )Z);
 
     cleanup_platform();
     return 0;
