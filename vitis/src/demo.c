@@ -124,11 +124,52 @@ const ivt_t ivt[] = {
 				(Xil_ExceptionHandler) fnUserIOIsr, &sUserIO } };
 #endif
 
+//Cordic rotation
+#define CORDIC_BASE XPAR_MY_CORDIC_ROTATION_0_S00_AXI_BASEADDR
+#define X *((volatile s32*) CORDIC_BASE)
+#define Y *((volatile s32*) (CORDIC_BASE+4))
+#define Z *((volatile s32*) (CORDIC_BASE+8))
+#define start_done *((volatile u32*) (CORDIC_BASE+12))
+
 // Function to perform sign extension
 s32 sign_extend_24_32(u32 x) {
 	const int bits = 24;
 	uint32_t m = 1u << (bits - 1);
 	return (x ^ m) - m;
+}
+
+void cordic(u32 audio,uint32_t auxPhase, int32_t *c, int32_t *s){
+	X = audio;
+	Y = 0;
+
+	uint8_t rot_flag;
+
+	rot_flag=((auxPhase>4194304)||(auxPhase<(-4194304)));
+
+	if(rot_flag)
+	{
+		auxPhase=auxPhase-8388608;
+
+		if (auxPhase & 0x800000){
+			auxPhase = (0xff << 24)|(auxPhase & 0xffffff);
+		}else{
+			auxPhase = auxPhase & 0xffffff;
+		}
+	}
+    Z=auxPhase;
+
+	start_done = 1;
+
+	while (start_done == 0) {}
+
+	*c=X;
+	*s=Y;
+
+	if(rot_flag)
+	{
+		*c=-X;
+		*s=-Y;
+	}
 }
 
 /*****************************************************************************/
@@ -160,6 +201,9 @@ int main(void) {
 
 	// Pointer to circular buffer
 	volatile u32 *circular_buffer = (u32*) XPAR_MY_CIRCULAR_BUFFER_0_S00_AXI_BASEADDR;
+
+
+	uint32_t auxPhase, c, s;
 
 	// for-loop counter
 	u32 i;
@@ -298,13 +342,14 @@ int main(void) {
 
 		// Signal processing loop (your code goes here!!)
 		for (i = 0; i < NR_AUDIO_SAMPLES; i++) {
-			circular_buffer[0] = processing_audio[i];
-			output_buffer[i]=processing_audio[i];//+circular_buffer[0];
+			//circular_buffer[0] = processing_audio[i];
+			//output_buffer[i]=processing_audio[i]+circular_buffer[0];
 
-			//output_buffer[i] = ((s64) sign_extend_24_32(processing_audio[i])
-			//		* (s64) ((1<<23) * cos(phase))) >> 23;
+			auxPhase = (phase/M_PI)*(1L<<23);
+			cordic(processing_audio[i], auxPhase, &c, &s);
+			output_buffer[i] = c;
 
-			//phase = fmod(phase + Om, 2 * M_PI);
+			phase = fmod(phase + Om, 2 * M_PI);
 		}
 
 		// Flush cache data to main memory
