@@ -44,6 +44,7 @@
 #include "xtime_l.h"
 
 #include <math.h>
+#include <stdbool.h>
 
 #ifdef XPAR_INTC_0_DEVICE_ID
 #include "xintc.h"
@@ -172,6 +173,7 @@ void cordic(u32 audio,uint32_t auxPhase, int32_t *c, int32_t *s){
 	}
 }
 
+
 /*****************************************************************************/
 /**
  *
@@ -198,9 +200,10 @@ void cordic(u32 audio,uint32_t auxPhase, int32_t *c, int32_t *s){
  ******************************************************************************/
 int main(void) {
 	int Status;
+	bool btn1 ,btn2, btn3 = false;
 
 	// Pointer to circular buffer
-	volatile u32 *circular_buffer = (u32*) XPAR_MY_CIRCULAR_BUFFER_0_S00_AXI_BASEADDR;
+	volatile s32 *circular_buffer = (s32*) XPAR_MY_CIRCULAR_BUFFER_0_S00_AXI_BASEADDR;
 
 
 	uint32_t auxPhase, c, s;
@@ -302,7 +305,8 @@ int main(void) {
 	fnAudioPlay2(sAxiDma, output_buffer, NR_AUDIO_SAMPLES);
 
 	// Circular buffer setting up
-	circular_buffer[1] = 9600;
+	int delay_echo = 30000;
+	circular_buffer[1] = delay_echo;
 
 	// For AM modulator
 	double phase = 0.0;
@@ -340,16 +344,80 @@ int main(void) {
 		Xil_DCacheInvalidateRange((u32) processing_audio,
 				sizeof(u32) * NR_AUDIO_SAMPLES);
 
+		s32 circularResult, chorus1, chorus2, chorus3,chorus4, chorus5, chorus6,chorus7, chorus8, chorus9;
+		s32 cordicResult;
 		// Signal processing loop (your code goes here!!)
 		for (i = 0; i < NR_AUDIO_SAMPLES; i++) {
-			//circular_buffer[0] = processing_audio[i];
-			//output_buffer[i]=processing_audio[i]+circular_buffer[0];
+			// Echo effect
+			if (btn1 && !btn2 && !btn3) {
+				circular_buffer[0] = processing_audio[i];
+				circular_buffer[1] = delay_echo;
+				output_buffer[i]=sign_extend_24_32(processing_audio[i])+(circular_buffer[0]>>1);
+			}
 
-			auxPhase = (phase/M_PI)*(1L<<23);
-			cordic(processing_audio[i], auxPhase, &c, &s);
-			output_buffer[i] = c;
+			// Cordic effect
+			if (!btn1 && btn2  && !btn3 ) {
+				auxPhase = (phase/M_PI)*(1L<<23);
+				cordic(processing_audio[i], auxPhase, &c, &s);
+				output_buffer[i] = c;
+				phase = fmod(phase + Om, 2 * M_PI);
+			}
 
-			phase = fmod(phase + Om, 2 * M_PI);
+			// Both effect echo and cordic
+			if (btn1 && btn2  && !btn3 ) {
+				circular_buffer[0] = processing_audio[i];
+				circular_buffer[1] = delay_echo;
+				circularResult =sign_extend_24_32(processing_audio[i])+circular_buffer[0];
+
+				auxPhase = (phase/M_PI)*(1L<<23);
+				cordic(processing_audio[i], auxPhase, &c, &s);
+				cordicResult = c;
+				output_buffer[i] = ((circularResult + cordicResult)/2);
+				phase = fmod(phase + Om, 2 * M_PI);
+			}
+
+			// Chorus effect
+			if (!btn1 && !btn2  && btn3 ) {
+				circular_buffer[0] = processing_audio[i];
+
+				double delay_chorus[] = {0.2, 0.17, 0.14,0.1, 0.08, 0.06,0.4, 0.03, 0.015};
+				circular_buffer[1] = AUDIO_SAMPLING_RATE * delay_chorus[0];
+				chorus1 = circular_buffer[0];
+				circular_buffer[1] = AUDIO_SAMPLING_RATE * delay_chorus[1];
+				chorus2 = circular_buffer[0];
+				circular_buffer[1] = AUDIO_SAMPLING_RATE * delay_chorus[2];
+				chorus3 = circular_buffer[0];
+				circular_buffer[1] = AUDIO_SAMPLING_RATE * delay_chorus[3];
+				chorus4 = circular_buffer[0];
+				circular_buffer[1] = AUDIO_SAMPLING_RATE * delay_chorus[4];
+				chorus5 = circular_buffer[0];
+				circular_buffer[1] = AUDIO_SAMPLING_RATE * delay_chorus[5];
+				chorus6 = circular_buffer[0];
+				circular_buffer[1] = AUDIO_SAMPLING_RATE * delay_chorus[6];
+				chorus7 = circular_buffer[0];
+				circular_buffer[1] = AUDIO_SAMPLING_RATE * delay_chorus[7];
+				chorus8 = circular_buffer[0];
+				circular_buffer[1] = AUDIO_SAMPLING_RATE * delay_chorus[8];
+				chorus9 = circular_buffer[0];
+
+				output_buffer[i] = sign_extend_24_32(processing_audio[i]) + chorus1 + chorus2 + chorus3 + chorus4 + chorus5 + chorus6 + chorus7 + chorus8 + chorus9;
+			}
+
+			// Both effect cordic and echo
+			if (!btn1 && btn2  && btn3 ) {
+				auxPhase = (phase/M_PI)*(1L<<23);
+				cordic(processing_audio[i], auxPhase, &c, &s);
+				cordicResult = c;
+				phase = fmod(phase + Om, 2 * M_PI);
+
+				circular_buffer[0] = cordicResult;
+				circularResult =sign_extend_24_32(processing_audio[i])+circular_buffer[0];
+				output_buffer[i] = ((circularResult + cordicResult)/2);
+			}
+
+			if (!btn1 && !btn2  && !btn3 ) {
+				output_buffer[i] = processing_audio[i];
+			}
 		}
 
 		// Flush cache data to main memory
@@ -379,19 +447,36 @@ int main(void) {
 
 		// Checking the btn change event
 		if (Demo.fUserIOEvent) {
-			xil_printf("\r\nButton: %c", Demo.chBtn);
 			switch (Demo.chBtn) {
+			case 'c':
+				btn1 = !btn1;
+				if (btn1 && !btn2  && !btn3 ) {xil_printf("\r\nEcho Effect");}
+				else if (!btn1 && btn2  && !btn3 ) {xil_printf("\r\nCordic Effect");}
+				else if (!btn1 && !btn2  && btn3 ) {xil_printf("\r\nChorus Effect");}
+				else if (btn1 && btn2  && !btn3 ) {xil_printf("\r\nEcho and Cordic Effect");}
+				else if (!btn1 && btn2  && btn3 ) {xil_printf("\r\nCordic and Echo Effect");}
+				break;
 			case 'u':
-
-				break;
-			case 'd':
-
-				break;
-			case 'r':
-
+				btn2 = !btn2;
+				if (btn1 && !btn2  && !btn3 ) {xil_printf("\r\nEcho Effect");}
+				else if (!btn1 && btn2  && !btn3 ) {xil_printf("\r\nCordic Effect");}
+				else if (!btn1 && !btn2  && btn3 ) {xil_printf("\r\nChorus Effect");}
+				else if (btn1 && btn2  && !btn3 ) {xil_printf("\r\nEcho and Cordic Effect");}
+				else if (!btn1 && btn2  && btn3 ) {xil_printf("\r\nCordic and Echo Effect");}
 				break;
 			case 'l':
-
+				btn3 = !btn3;
+				if (btn1 && !btn2  && !btn3 ) {xil_printf("\r\nEcho Effect");}
+				else if (!btn1 && btn2  && !btn3 ) {xil_printf("\r\nCordic Effect");}
+				else if (!btn1 && !btn2  && btn3 ) {xil_printf("\r\nChorus Effect");}
+				else if (btn1 && btn2  && !btn3 ) {xil_printf("\r\nEcho and Cordic Effect");}
+				else if (!btn1 && btn2  && btn3 ) {xil_printf("\r\nCordic and Echo Effect");}
+				break;
+			case 'r':
+				btn1 = false;
+				btn2 = false;
+				btn3 = false;
+				xil_printf("\r\nReset effects");
 				break;
 			default:
 				break;
